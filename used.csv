@@ -1,0 +1,8 @@
+D: Christopher Nolan’s films:['TENET', ' INCEPTION', ' MEMENTO', ' INTERSTELLAR']
+O: beef cuts:['STEAK', ' BRISKET', ' RIB', ' TENDERLOIN', ' T-BONE', ' CHOP']
+O: types of food:['HEALTHY', ' FATTY', ' SLOW', ' JUNK', ' CONVENIENCE', ' TAKE-AWAY']
+O: shades of pink:['BARBIE', ' FLAMINGO', ' CORAL', ' STRAWBERRY', ' SALMON']
+D: baby animals:['BABY GORILLA', ' PUP', ' KITTEN', ' CUB', ' CHICK', ' CALF']
+O: orchestra related vocabulary:['CONDUCTOR', ' CONCERTMASTER', ' SYMPHONY', ' STRINGS', ' BRASS', ' SOLOIST']
+O: collocate with ‘mate’:['CLASS', ' WORK', ' FLAT', ' ROOM', ' TEAM', ' BED', ' SOUL']
+O: mobile phone accessories:['CASE', ' HOLDER', ' CHARGER', ' POWER BANK', ' SELFIE STICK', ' SCREEN PROTECTOR']
