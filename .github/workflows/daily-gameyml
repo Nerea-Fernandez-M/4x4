@@ -1,0 +1,25 @@
+name: Generar juego diario
+
+on:
+  schedule:
+    # 23:00 UTC -> 00:00 hora de Madrid en horario de invierno (CET, UTC+1)
+    - cron: "0 23 * 10-12,1-3 *"
+    # 22:00 UTC -> 00:00 hora de Madrid en horario de verano (CEST, UTC+2)
+    - cron: "0 22 * 4-9 *"
+  # Permite ejecutarlo manualmente desde la pestaña "Actions" de GitHub
+  workflow_dispatch:
+
+jobs:
+  generate-game:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint /generate
+        run: |
+          response=$(curl -s -o response.txt -w "%{http_code}" "${{ secrets.GENERATE_URL }}?key=${{ secrets.GENERATE_SECRET }}")
+          echo "Código de respuesta: $response"
+          cat response.txt
+          if [ "$response" -ne 200 ]; then
+            echo "❌ Error al generar el juego"
+            exit 1
+          fi
+          echo "✅ Juego generado correctamente"
