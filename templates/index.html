@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-3T0Q66QFE9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-3T0Q66QFE9');
-</script>
-  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>4x4</title>
@@ -105,12 +94,11 @@
   </style>
 </head>
 <body>
-  
   <div class="container">
     <h1>4x4: B2 English</h1>
-    <p class="subtitle">Create four groups of four words</p>
     <p class="subtitle">
-      <a href="https://www.nytimes.com/games/connections" target="_blank">A NYT Connections based game</a>
+      Create four groups of four · 
+      <a href="https://www.nytimes.com/games/connections" target="_blank">A Connections based game</a>
     </p>
 
     <div id="message" class="message"></div>
@@ -122,6 +110,7 @@
     <div class="controls" id="controls">
       <button id="shuffleBtn">Shuffle</button>
       <button id="submitBtn">Submit</button>
+      <button id="deselectBtn">Deselect</button>
     </div>
   </div>
 
@@ -169,10 +158,19 @@
           card.onclick = () => toggleSelect(card);
           grid.appendChild(card);
         });
-      } else {
-        let orderedGroups = [...allGroups]; 
-        renderSolvedGroups(orderedGroups);
-      }
+      }else {
+    // Mantener el orden original de los grupos resueltos
+    const orderedGroups = [...solved];
+
+    // Añade al final los grupos que no se han resuelto
+    allGroups.forEach(group => {
+        if (!orderedGroups.includes(group)) {
+            orderedGroups.push(group);
+        }
+    });
+
+    renderSolvedGroups(orderedGroups);
+}
     }
 
     function renderSolvedGroups(groups) {
@@ -290,11 +288,13 @@
       document.querySelectorAll(".card").forEach(c => c.onclick = null);
       document.getElementById("submitBtn").disabled = true;
       document.getElementById("shuffleBtn").disabled = true;
+      document.getElementById("deselectBtn").disabled = true;
     }
 
     function enableGame() {
       document.getElementById("submitBtn").disabled = false;
       document.getElementById("shuffleBtn").disabled = false;
+      document.getElementById("deselectBtn").disabled = false;
     }
 
     function showMessage(text, success) {
@@ -309,13 +309,14 @@
         renderGame();
       }
     });
+    document.getElementById("deselectBtn").addEventListener("click", () => {
+      if (!gameOver) {
+        selectedWords = [];
+        renderGame();
+      }
+    });
 
     initGame();
   </script>
 </body>
-
 </html>
-
-
-
-
