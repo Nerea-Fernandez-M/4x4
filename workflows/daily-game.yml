@@ -1,0 +1,39 @@
+name: Generate Daily Game
+
+on:
+  schedule:
+    # Ejecutar todos los días a las 23:00 UTC = 00:00 CET (medianoche en España en invierno)
+    # En verano (CEST) será a la 01:00 de la madrugada
+    - cron: '0 23 * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub Actions
+
+jobs:
+  generate-game:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Generate new daily game
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python generate_connection.py
+          echo "✅ Nueva partida generada exitosamente!"
+      
+      - name: Verify game was created
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python read_connection.py
