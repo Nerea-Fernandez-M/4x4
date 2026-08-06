@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>4x4</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background-color: #f9f9f9;
+      color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .container { text-align: center; max-width: 700px; width: 100%; }
+    h1 { font-size: 2rem; margin-bottom: 0.2rem; }
+    .subtitle { font-size: 1rem; color: #666; margin-bottom: 1rem; }
+    .subtitle a { color: #1a73e8; text-decoration: none; }
+    .subtitle a:hover { text-decoration: underline; }
+    .message { font-size: 1.2rem; font-weight: bold; margin-bottom: 1rem; min-height: 1.5rem; }
+    .lives { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
+    .life { width: 15px; height: 15px; border-radius: 50%; background-color: #1a73e8; }
+    .life.lost { background-color: #ddd; }
+    .group-section { margin-bottom: 1rem; text-align: left; }
+    .group-title { font-weight: bold; margin: 0.5rem 0; font-size: 1.1rem; }
+    .grid { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 0.5rem; 
+      margin-bottom: 1.5rem; 
+    }
+    .card {
+      background-color: #fff;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      user-select: none;
+      font-size: 0.9rem;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .card:hover { background-color: #f0f0f0; transform: scale(1.02); }
+    .card.selected { background-color: #e0f0ff; border-color: #3399ff; }
+    .card.solved.darkblue { background-color: #003366; color: #fff; }
+    .card.solved.lightblue { background-color: #cce6ff; color: #003366; }
+    .controls { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    button {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #1a73e8;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background-color: #155cb0; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>4x4: B2 English</h1>
+    <p class="subtitle">
+      Create four groups of four words · 
+      <a href="https://www.nytimes.com/games/connections" target="_blank">A Connections based game</a>
+    </p>
+
+    <div id="message" class="message"></div>
+    <div id="lives" class="lives"></div>
+
+    <div id="solvedGroups"></div>
+    <div id="grid" class="grid"></div>
+
+    <div class="controls">
+      <button id="shuffleBtn">Shuffle</button>
+      <button id="submitBtn">Submit</button>
+    </div>
+  </div>
+
+  <script>
+    const allGroups = [
+      { name: "ANIMALS", words: ["CAT", "DOG", "BIRD", "FISH"] },
+      { name: "COLORS", words: ["RED", "BLUE", "GREEN", "YELLOW"] },
+      { name: "FRUITS", words: ["APPLE", "BANANA", "ORANGE", "GRAPE"] },
+      { name: "COUNTRIES", words: ["SPAIN", "FRANCE", "ITALY", "GERMANY"] }
+    ];
+
+    let solved = [];
+    let selectedWords = [];
+    let remainingWords = [];
+    let lives = 4;
+    let gameOver = false;
+
+    const grid = document.getElementById("grid");
+    const message = document.getElementById("message");
+    const solvedGroups = document.getElementById("solvedGroups");
+    const livesDisplay = document.getElementById("lives");
+
+    const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+
+    function initGame() {
+      solved = [];
+      selectedWords = [];
+      remainingWords = allGroups.flatMap(g => g.words);
+      lives = 4;
+      gameOver = false;
+      renderGame();
+      updateLives();
+      showMessage("", true);
+    }
+
+    function renderGame() {
+      grid.innerHTML = "";
+      solvedGroups.innerHTML = "";
+
+      renderSolvedGroups(solved);
+
+      if (gameOver) return;
+
+      shuffle([...remainingWords]).forEach(word => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.textContent = word;
+        card.onclick = () => toggleSelect(card);
+        grid.appendChild(card);
+      });
+    }
+
+    function renderSolvedGroups(groups) {
+      groups.forEach((group, i) => {
+        const section = document.createElement("div");
+        section.className = "group-section";
+
+        const title = document.createElement("div");
+        title.className = "group-title";
+        title.textContent = group.name;
+
+        const groupGrid = document.createElement("div");
+        groupGrid.className = "grid";
+
+        group.words.forEach(word => {
+          const card = document.createElement("div");
+          card.className = `card solved ${i === 0 ? "darkblue" : "lightblue"}`;
+          card.textContent = word;
+          groupGrid.appendChild(card);
+        });
+
+        section.append(title, groupGrid);
+        solvedGroups.appendChild(section);
+      });
+    }
+
+    function toggleSelect(card) {
+      const word = card.textContent;
+      if (card.classList.contains("selected")) {
+        card.classList.remove("selected");
+        selectedWords = selectedWords.filter(w => w !== word);
+      } else if (selectedWords.length < 4) {
+        card.classList.add("selected");
+        selectedWords.push(word);
+      }
+    }
+
+    function submitGroup() {
+      if (selectedWords.length !== 4 || gameOver) {
+        showMessage("Select only four words!", false);
+        return;
+      }
+
+      const found = allGroups.find(g =>
+        g.words.every(w => selectedWords.includes(w))
+      );
+
+      if (found) {
+        solved.push(found);
+        remainingWords = remainingWords.filter(w => !found.words.includes(w));
+        selectedWords = [];
+
+        if (solved.length === 4) {
+          showMessage("You won! 🎉", true);
+          gameOver = true;
+        } else {
+          showMessage(`Group "${found.name}" correct!`, true);
+        }
+        renderGame();
+        return;
+      }
+
+      lives--;
+      updateLives();
+      if (lives <= 0) {
+        showMessage("Maybe next time ❌", false);
+        gameOver = true;
+        renderSolvedGroups(allGroups);
+      } else {
+        showMessage("Incorrect group ❌", false);
+      }
+    }
+
+    function updateLives() {
+      livesDisplay.innerHTML = "";
+      for (let i = 0; i < 4; i++) {
+        const dot = document.createElement("div");
+        dot.className = `life ${i >= lives ? "lost" : ""}`;
+        livesDisplay.appendChild(dot);
+      }
+    }
+
+    function showMessage(text, success) {
+      message.textContent = text;
+      message.style.color = success ? "green" : "red";
+    }
+
+    document.getElementById("submitBtn").onclick = submitGroup;
+    document.getElementById("shuffleBtn").onclick = () => {
+      selectedWords = [];
+      renderGame();
+    };
+
+    initGame();
+  </script>
+</body>
+</html>
