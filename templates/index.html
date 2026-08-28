@@ -25,14 +25,15 @@
     .lives { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; }
     .life { width: 15px; height: 15px; border-radius: 50%; background-color: #1a73e8; }
     .life.lost { background-color: #ddd; }
-    .group-section { margin-bottom: 1rem; text-align: left; }
-    .group-title { font-weight: bold; margin: 0.5rem 0; font-size: 1.1rem; }
+    .group-section { margin-bottom: 0.6rem; text-align: left; }
+    .group-title { font-weight: bold; margin: 0.3rem 0; font-size: 1.1rem; }
     .grid { 
       display: grid; 
       grid-template-columns: repeat(4, 1fr); 
       gap: 0.5rem; 
       margin-bottom: 1.5rem; 
     }
+    .group-section .grid { margin-bottom: 0; }
     .card {
       background-color: #fff; border: 2px solid #ddd; border-radius: 8px;
       padding: 0.8rem; font-weight: bold; cursor: pointer;
@@ -45,9 +46,24 @@
     }
     .card:hover { background-color: #f0f0f0; transform: scale(1.02); }
     .card.selected { background-color: #e0f0ff; border-color: #3399ff; }
+    .card.solved {
+      min-height: 40px;
+      padding: 0.4rem;
+      font-size: 0.8rem;
+      cursor: default;
+    }
+    .card.solved:hover { transform: none; }
     .card.solved.darkblue { background-color: #003366; border-color: #001f4d; color: #fff; }
     .card.solved.lightblue { background-color: #cce6ff; border-color: #66b2ff; color: #003366; }
-    .controls { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .controls {
+      display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+      margin-top: 1rem;
+      position: sticky;
+      bottom: 0;
+      background-color: #f9f9f9;
+      padding: 0.6rem 0 0.4rem;
+      z-index: 10;
+    }
     button {
       flex: 1; min-width: 100px; padding: 0.6rem 1rem;
       font-size: 1rem; border: none; border-radius: 6px;
@@ -68,6 +84,11 @@
         padding: 0.6rem 0.3rem;
         font-size: 0.8rem;
         min-height: 55px;
+      }
+      .card.solved {
+        min-height: 34px;
+        padding: 0.3rem;
+        font-size: 0.7rem;
       }
       .controls { 
         gap: 0.3rem; 
@@ -98,7 +119,7 @@
     <h1>4x4: B2 English</h1>
     <p class="subtitle">
       Create four groups of four<br>
-      <a href="https://www.nytimes.com/games/connections" target="_blank">A Connections based game</a>
+      <a href="https://www.nytimes.com/games/connections" target="_blank">A NYT Connections based game</a>
     </p>
 
     <div id="message" class="message"></div>
@@ -133,8 +154,12 @@
 
     function initGame() {
       solved = [];
-      selectedWords = [];
-      remainingWords = allGroups.flatMap(g => g.words);
+      selectedWords = []; // objetos {id, word, groupIndex}
+      // Cada palabra lleva un id único (grupo-posición) para no confundirla
+      // con otra palabra idéntica en texto que pertenezca a otro grupo.
+      remainingWords = allGroups.flatMap((g, gi) =>
+        g.words.map((w, wi) => ({ id: `${gi}-${wi}`, word: w, groupIndex: gi }))
+      );
       lives = 4;
       gameOver = false;
       controls.style.display = "flex";
@@ -145,23 +170,35 @@
     }
 
     function renderGame() {
+      const scrollY = window.scrollY;
       solvedGroups.innerHTML = "";
       grid.innerHTML = "";
 
       if (!gameOver) {
         renderSolvedGroups(solved);
         const shuffled = shuffle([...remainingWords]);
-        shuffled.forEach(word => {
+        shuffled.forEach(item => {
           const card = document.createElement("div");
           card.className = "card";
-          card.textContent = word;
-          card.onclick = () => toggleSelect(card);
+          card.textContent = item.word;
+          card.dataset.id = item.id;
+          card.onclick = () => toggleSelect(card, item);
           grid.appendChild(card);
         });
       } else {
-        let orderedGroups = [...allGroups]; 
+        // Mantener el orden en el que se fueron resolviendo los grupos
+        // (así el último acertado no "salta" a su posición original).
+        const orderedGroups = [...solved];
+        allGroups.forEach(group => {
+          if (!orderedGroups.includes(group)) {
+            orderedGroups.push(group);
+          }
+        });
         renderSolvedGroups(orderedGroups);
       }
+
+      // Mantener la posición de scroll para que la pantalla no salte arriba
+      window.scrollTo(0, scrollY);
     }
 
     function renderSolvedGroups(groups) {
@@ -194,15 +231,14 @@
       });
     }
 
-    function toggleSelect(card) {
-      const word = card.textContent;
+    function toggleSelect(card, item) {
       if (card.classList.contains("selected")) {
         card.classList.remove("selected");
-        selectedWords = selectedWords.filter(w => w !== word);
+        selectedWords = selectedWords.filter(s => s.id !== item.id);
       } else {
         if (selectedWords.length >= 4) return;
         card.classList.add("selected");
-        selectedWords.push(word);
+        selectedWords.push(item);
       }
     }
 
@@ -212,13 +248,20 @@
         return;
       }
 
-      let found = allGroups.find(group =>
-        group.words.every(word => selectedWords.includes(word))
-      );
+      // Contamos a qué grupo pertenece cada palabra seleccionada usando su
+      // groupIndex (no su texto), así dos palabras iguales de grupos
+      // distintos nunca se confunden entre sí.
+      const counts = {};
+      selectedWords.forEach(s => {
+        counts[s.groupIndex] = (counts[s.groupIndex] || 0) + 1;
+      });
+      const matchedGroupIndex = Object.keys(counts).find(gi => counts[gi] === 4);
+      const found = matchedGroupIndex !== undefined ? allGroups[matchedGroupIndex] : null;
 
       if (found) {
         solved.push(found);
-        remainingWords = remainingWords.filter(w => !found.words.includes(w));
+        const selectedIds = new Set(selectedWords.map(s => s.id));
+        remainingWords = remainingWords.filter(item => !selectedIds.has(item.id));
         selectedWords = [];
 
         if (solved.length === 4) {
@@ -229,10 +272,7 @@
           renderGame();
         }
       } else {
-        let almost = allGroups.find(group => {
-          let count = group.words.filter(w => selectedWords.includes(w)).length;
-          return count === 3;
-        });
+        const almost = Object.values(counts).some(c => c === 3);
 
         if (almost) {
           lives--;
