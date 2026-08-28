@@ -97,7 +97,7 @@
   <div class="container">
     <h1>4x4: B2 English</h1>
     <p class="subtitle">
-      Create four groups of four · 
+      Create four groups of four<br>
       <a href="https://www.nytimes.com/games/connections" target="_blank">A Connections based game</a>
     </p>
 
@@ -109,8 +109,8 @@
 
     <div class="controls" id="controls">
       <button id="shuffleBtn">Shuffle</button>
-      <button id="submitBtn">Submit</button>
       <button id="deselectBtn">Deselect</button>
+      <button id="submitBtn">Submit</button>
     </div>
   </div>
 
@@ -158,19 +158,10 @@
           card.onclick = () => toggleSelect(card);
           grid.appendChild(card);
         });
-      }else {
-    // Mantener el orden original de los grupos resueltos
-    const orderedGroups = [...solved];
-
-    // Añade al final los grupos que no se han resuelto
-    allGroups.forEach(group => {
-        if (!orderedGroups.includes(group)) {
-            orderedGroups.push(group);
-        }
-    });
-
-    renderSolvedGroups(orderedGroups);
-}
+      } else {
+        let orderedGroups = [...allGroups]; 
+        renderSolvedGroups(orderedGroups);
+      }
     }
 
     function renderSolvedGroups(groups) {
@@ -312,10 +303,9 @@
     document.getElementById("deselectBtn").addEventListener("click", () => {
       if (!gameOver) {
         selectedWords = [];
-        renderGame();
+        document.querySelectorAll(".card.selected").forEach(c => c.classList.remove("selected"));
       }
     });
-
     initGame();
   </script>
 </body>
